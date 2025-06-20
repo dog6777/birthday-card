@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>粉圓生日快樂卡 - 手機粉圓大一點</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Noto Sans TC', sans-serif;
+      overflow: hidden;
+      background: url('背景圖片.png') no-repeat center center / cover;
+      user-select: none;
+      color: #e280a4;
+      touch-action: manipulation;
+    }
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      cursor: pointer;
+    }
+    .character {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      top: -150px;
+      user-select: none;
+      pointer-events: none;
+      transform-origin: center center;
+      transition: width 0.3s, height 0.3s, top 0.3s;
+    }
+    @media (max-width: 768px) {
+      .character {
+        width: 140px;
+        height: 140px;
+        top: -200px;
+      }
+    }
+    #progressBarContainer {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 80vw;
+      height: 20px;
+      background: rgba(255 255 255 / 0.3);
+      border-radius: 10px;
+      overflow: hidden;
+      z-index: 1000;
+    }
+    #progressBar {
+      width: 0%;
+      height: 100%;
+      background: #e280a4;
+      transition: width 0.3s ease;
+    }
+    #message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      display: none;
+      user-select: none;
+      z-index: 2000;
+    }
+
+    @keyframes popIn {
+      0% {
+        transform: scale(0.5) translate(-50%, -50%);
+        opacity: 0;
+      }
+      70% {
+        transform: scale(1.2) translate(-50%, -50%);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1) translate(-50%, -50%);
+      }
+    }
+
+    #message.pop-in {
+      animation: popIn 0.6s ease forwards;
+    }
+  </style>
+</head>
+<body>
+
+<div id="container"></div>
+<div id="progressBarContainer">
+  <div id="progressBar"></div>
+</div>
+<div id="message"></div>
+
+<script>
+  const container = document.getElementById('container');
+  const progressBar = document.getElementById('progressBar');
+  const message = document.getElementById('message');
+
+  const characterSrc = 'pink.png';
+
+  // 判斷是否手機尺寸（寬度 ≤ 768px）
+  const isMobile = window.innerWidth <= 768;
+
+  // 動態設定角色大小與起始 top
+  const charWidth = isMobile ? 140 : 100;
+  const charHeight = isMobile ? 140 : 100;
+  const startTop = isMobile ? -200 : -150;
+
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+
+  // 背景音樂
+  const bgm = new Audio('bgm.mp3');
+  bgm.loop = true;
+  bgm.volume = 0.1;
+  let bgmStarted = false;
+
+  // 點擊音效
+  const clickSound = new Audio('click.mp3');
+  clickSound.volume = 0.5;
+
+  const characters = [];
+  const maxStackCount = Math.floor(screenHeight / (charHeight * 0.8));
+  const maxCount = maxStackCount * 8;
+  let count = 0;
+
+  function randomBetween(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  // 使用兩點距離判斷堆疊位置
+  function getStackY(x) {
+    let baseY = screenHeight - charHeight;
+    characters.forEach(c => {
+      const dx = c.x - x;
+      const dy = c.y - baseY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < charWidth * 0.8) {
+        if (c.y - charHeight * 0.8 < baseY) {
+          baseY = c.y - charHeight * 0.8;
+        }
+      }
+    });
+    return baseY;
+  }
+
+  function updateProgress() {
+    progressBar.style.width = (count / maxCount) * 100 + '%';
+  }
+
+  container.addEventListener('click', () => {
+    if (count >= maxCount) return;
+
+    // 播放點擊音效
+    clickSound.currentTime = 0;
+    clickSound.play();
+
+    // 開始背景音樂（瀏覽器限制需用戶點擊才可播放）
+    if (!bgmStarted) {
+      bgm.play().catch(() => {
+        // 播放失敗不影響使用
+      });
+      bgmStarted = true;
+    }
+
+    let x = randomBetween(0, screenWidth - charWidth);
+    let y = getStackY(x);
+
+    const char = document.createElement('img');
+    char.src = characterSrc;
+    char.className = 'character';
+    char.style.left = x + 'px';
+    char.style.top = startTop + 'px';
+
+    const randomAngle = randomBetween(-15, 15);
+    char.style.transform = `rotate(${randomAngle}deg)`;
+
+    container.appendChild(char);
+
+    let start = null;
+    const duration = 600;
+
+    function animate(timestamp) {
+      if (!start) start = timestamp;
+      let progress = timestamp - start;
+      let percent = Math.min(progress / duration, 1);
+      let currentTop = startTop + (y - startTop) * percent;
+      char.style.top = currentTop + 'px';
+
+      if (percent < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        characters.push({el: char, x: x, y: y});
+        count++;
+        updateProgress();
+
+        if (count >= maxCount) {
+          explodeAll();
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  });
+
+  function explodeAll() {
+    // 顯示生日快樂圖片與音效，不清除角色
+    const img = document.createElement('img');
+    img.src = 'happy.png'; // 請換成你的圖片檔名
+    img.style.maxWidth = '90vw';
+    img.style.maxHeight = '50vh';
+    img.style.display = 'block';
+
+    message.innerHTML = '';
+    message.appendChild(img);
+    message.style.display = 'block';
+    message.classList.add('pop-in');
+
+    const cheer = new Audio('cheer.mp3');
+    cheer.volume = 0.8;
+    cheer.play();
+  }
+</script>
+
+</body>
+</html>
