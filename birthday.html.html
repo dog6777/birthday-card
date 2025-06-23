@@ -122,7 +122,8 @@
 
   const characters = [];
   const maxStackCount = Math.floor(screenHeight / (charHeight * 0.8));
-  const maxCount = maxStackCount * 8;
+  // 改成 20 倍寬度堆疊數，增加粉圓數量
+  const maxCount = maxStackCount * 20;
   let count = 0;
 
   function randomBetween(min, max) {
