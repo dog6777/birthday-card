@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>粉圓生日快樂卡 - 手機粉圓大一點</title>
+  <title>粉圓生日快樂卡 - 手機粉圓大一點 + 響應進度條</title>
   <style>
     html, body {
       margin: 0; padding: 0; height: 100%;
@@ -13,12 +13,14 @@
       color: #e280a4;
       touch-action: manipulation;
     }
+
     #container {
       position: relative;
       width: 100vw;
       height: 100vh;
       cursor: pointer;
     }
+
     .character {
       position: absolute;
       width: 100px;
@@ -29,6 +31,7 @@
       transform-origin: center center;
       transition: width 0.3s, height 0.3s, top 0.3s;
     }
+
     @media (max-width: 768px) {
       .character {
         width: 140px;
@@ -36,23 +39,28 @@
         top: -200px;
       }
     }
+
     #progressBarContainer {
       position: fixed;
       top: 10px;
-      left: 10px;
-      width: 80vw;
+      left: 0;
+      width: 100vw;
+      padding: 0 10px;
+      box-sizing: border-box;
       height: 20px;
       background: rgba(255 255 255 / 0.3);
       border-radius: 10px;
       overflow: hidden;
       z-index: 1000;
     }
+
     #progressBar {
       width: 0%;
       height: 100%;
       background: #e280a4;
       transition: width 0.3s ease;
     }
+
     #message {
       position: fixed;
       top: 50%;
@@ -97,25 +105,18 @@
   const message = document.getElementById('message');
 
   const characterSrc = 'pink.png';
-
-  // 判斷是否手機尺寸（寬度 ≤ 768px）
   const isMobile = window.innerWidth <= 768;
-
-  // 動態設定角色大小與起始 top
   const charWidth = isMobile ? 140 : 100;
   const charHeight = isMobile ? 140 : 100;
   const startTop = isMobile ? -200 : -150;
-
   const screenWidth = window.innerWidth;
   const screenHeight = window.innerHeight;
 
-  // 背景音樂
   const bgm = new Audio('bgm.mp3');
   bgm.loop = true;
   bgm.volume = 0.1;
   let bgmStarted = false;
 
-  // 點擊音效
   const clickSound = new Audio('click.mp3');
   clickSound.volume = 0.5;
 
@@ -128,7 +129,6 @@
     return Math.random() * (max - min) + min;
   }
 
-  // 使用兩點距離判斷堆疊位置
   function getStackY(x) {
     let baseY = screenHeight - charHeight;
     characters.forEach(c => {
@@ -151,15 +151,11 @@
   container.addEventListener('click', () => {
     if (count >= maxCount) return;
 
-    // 播放點擊音效
     clickSound.currentTime = 0;
     clickSound.play();
 
-    // 開始背景音樂（瀏覽器限制需用戶點擊才可播放）
     if (!bgmStarted) {
-      bgm.play().catch(() => {
-        // 播放失敗不影響使用
-      });
+      bgm.play().catch(() => {});
       bgmStarted = true;
     }
 
@@ -193,22 +189,25 @@
         characters.push({el: char, x: x, y: y});
         count++;
         updateProgress();
-
-        if (count >= maxCount) {
-          explodeAll();
-        }
+        if (count >= maxCount) explodeAll();
       }
     }
     requestAnimationFrame(animate);
   });
 
   function explodeAll() {
-    // 顯示生日快樂圖片與音效，不清除角色
     const img = document.createElement('img');
-    img.src = 'happy.png'; // 請換成你的圖片檔名
-    img.style.maxWidth = '90vw';
-    img.style.maxHeight = '80vh';
+    img.src = 'happy.png';
     img.style.display = 'block';
+
+    if (window.innerWidth <= 768) {
+      img.style.width = '90vw';
+      img.style.maxHeight = '50vh';
+      img.style.height = 'auto';
+    } else {
+      img.style.width = '70vw';
+      img.style.height = 'auto';
+    }
 
     message.innerHTML = '';
     message.appendChild(img);
